@@ -9,6 +9,16 @@
     "web": "expo start --web",
     "eject": "expo eject"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Vikraam27/chat-application-react-native.git"
+  },
+  "author": "vikram",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Vikraam27/chat-application-react-native/issues"
+  },
+  "homepage": "https://github.com/Vikraam27/chat-application-react-native#readme",
   "dependencies": {
     "expo": "~44.0.0",
     "expo-status-bar": "~1.2.0",
