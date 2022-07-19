@@ -1,17 +1,25 @@
+/* eslint-disable no-undef */
 import { Ionicons } from '@expo/vector-icons';
-import { StatusBar } from 'expo-status-bar';
 import React, {
   useContext, useEffect, useState, useRef,
 } from 'react';
 import {
-  View, StyleSheet, TouchableOpacity, ScrollView, TouchableHighlight, Text, ActivityIndicator,
+  View, StyleSheet, TouchableOpacity,
+  ScrollView, Text, ActivityIndicator,
+  StatusBar, Image, TouchableWithoutFeedback,
+  TouchableHighlight, Linking,
 } from 'react-native';
+import socket from 'socket.io-client';
+import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import { Avatar } from 'react-native-elements/dist/avatar/Avatar';
+import { useToast } from 'react-native-toast-notifications';
 import FetchAPI from '../../api';
 import { MessageInput } from '../../components/formComponents';
 import color from '../../styles/color';
 import Token from '../../utils/AsyncStorage';
 import UserInfoContex from '../../utils/Contex';
+import pdfIcon from '../../icons/pdf.png';
 
 export default function ChatScreen({ navigation, route }) {
   const [userinfo] = useContext(UserInfoContex);
@@ -19,14 +27,74 @@ export default function ChatScreen({ navigation, route }) {
   const [msg, setMsg] = useState('');
   const [roomid] = useState(route.params.roomid);
   const scrollViewRef = useRef();
+  const toast = useToast();
+  const io = socket.connect('http://localhost:5000', { transports: ['websocket'] });
 
   useEffect(async () => {
     if (roomid) {
       const accessToken = await Token.Get('accessToken');
       const res = await FetchAPI.getRoomDetails(roomid, accessToken);
-      setRoomInfo(res.data);
+      if (res.status === 'success') {
+        setRoomInfo(res.data);
+        console.log('recall');
+      }
     }
   }, []);
+
+  useEffect(() => {
+    io.on('connect', () => {
+      console.log('socket connceted');
+    });
+    io.emit('joinRoom', { roomId: roomid });
+    io.on('msg', (data) => {
+      setRoomInfo((prev) => ({
+        ...prev,
+        message: [
+          ...prev.message,
+          data,
+        ],
+      }));
+      console.log('socket');
+    });
+
+    return (() => {
+      io.disconnect();
+    });
+  }, []);
+
+  const uploadImageHandler = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      toast.show('Sorry, we need camera roll permissions to make this work!', {
+        type: 'customToast',
+        data: {
+          title: 'fail',
+          color: color.red,
+        },
+      });
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    });
+
+    if (!result.cancelled) {
+      const formdata = new FormData();
+      const accessToken = await Token.Get('accessToken');
+      formdata.append('data', { uri: result.uri, name: 'image', type: 'image/jpeg' });
+      await FetchAPI.uploadPictureMessage(formdata, roomid, accessToken);
+    }
+  };
+
+  const uploadDocumentHandler = async () => {
+    const requestFile = await DocumentPicker.getDocumentAsync({});
+    if (requestFile.type === 'success') {
+      const formdata = new FormData();
+      const accessToken = await Token.Get('accessToken');
+      formdata.append('data', { uri: requestFile.uri, name: requestFile.name, type: requestFile.mimeType });
+      await FetchAPI.uploadDocumentMessage(formdata, roomid, accessToken);
+    }
+  };
 
   const textToRef = (text) => {
     setMsg(text);
@@ -35,14 +103,22 @@ export default function ChatScreen({ navigation, route }) {
   const onSubmit = async () => {
     const accessToken = await Token.Get('accessToken');
     const res = await FetchAPI.postMessage(msg, 'text', roomid, accessToken);
-    setRoomInfo((prevState) => ({
-      ...prevState,
-      message: [
-        ...prevState.message,
-        res.data,
-      ],
-    }));
-    setMsg('');
+    if (res.status !== 'success') {
+      toast.show('unable to send message', {
+        type: 'customToast',
+        data: {
+          title: 'fail',
+          color: color.red,
+        },
+      });
+    }
+    if (res.status === 'success') {
+      io.emit('chatMsg', {
+        ...res.data,
+        roomId: roomid,
+      });
+      setMsg('');
+    }
   };
   if (!roomInfo || !roomid) {
     return (
@@ -124,26 +200,85 @@ export default function ChatScreen({ navigation, route }) {
         onContentSizeChange={() => scrollViewRef.current.scrollToEnd({ animated: false })}
         style={styles.messageContent}
       >
-        {message.length ? message.map((data) => (
-          <View
-            key={data.timestamp}
-            style={[styles.message,
-              data.sender === userinfo.owner ? styles.sender : styles.reciver]}
-          >
-            <Text style={styles.msgBody}>
-              {data.message}
-            </Text>
-            <Text style={styles.timestamp}>
-              {data.timestamp}
-            </Text>
-          </View>
-        )) : null}
+        {message.length ? message.map((data) => {
+          if (data.messageType === 'document') {
+            return (
+              <TouchableWithoutFeedback
+                key={data.timestamp}
+                onPress={() => Linking.openURL(data.message)}
+              >
+                <View
+                  key={data.timestamp}
+                  style={[styles.documentMsgContainer,
+                    data.sender === userinfo.owner ? styles.sender : styles.reciver]}
+                >
+                  <View style={{ display: 'flex', flexDirection: 'row' }}>
+                    <Image
+                      style={{
+                        width: 24,
+                        height: 25,
+                        marginRight: 10,
+                      }}
+                      source={pdfIcon}
+                    />
+                    <Text style={{ color: '#fff', fontStyle: 'italic' }}>Click here to open</Text>
+                  </View>
+                  <Text style={styles.timestamp}>
+                    {`${(new Date(data.timestamp)).toLocaleDateString()} ${(new Date(data.timestamp)).toLocaleTimeString()}`}
+                  </Text>
+                </View>
+              </TouchableWithoutFeedback>
+            );
+          }
+
+          if (data.messageType === 'image') {
+            return (
+              <TouchableWithoutFeedback
+                key={data.timestamp}
+                onPress={() => navigation.navigate('img', { imgUrl: data.message })}
+              >
+                <View
+                  key={data.timestamp}
+                  style={[styles.imageMsgContainer,
+                    data.sender === userinfo.owner ? styles.sender : styles.reciver]}
+                >
+                  <Image
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                    }}
+                    source={{ uri: data.message }}
+                  />
+
+                  <Text style={styles.timestamp}>
+                    {`${(new Date(data.timestamp)).toLocaleDateString()} ${(new Date(data.timestamp)).toLocaleTimeString()}`}
+                  </Text>
+                </View>
+              </TouchableWithoutFeedback>
+            );
+          }
+
+          return (
+            <View
+              key={data.timestamp}
+              style={[styles.message,
+                data.sender === userinfo.owner ? styles.sender : styles.reciver]}
+            >
+              <Text style={styles.msgBody}>
+                {data.message}
+              </Text>
+              <Text style={styles.timestamp}>
+                {data.timestamp}
+              </Text>
+            </View>
+          );
+        }) : null}
       </ScrollView>
       <View style={styles.inputContainer}>
-        <TouchableHighlight onPress={() => console.log('o')} style={styles.buttonContainer}>
+        <TouchableHighlight onPress={() => uploadImageHandler()} style={styles.buttonContainer}>
           <Ionicons name="images-outline" size={20} color="#fff" />
         </TouchableHighlight>
-        <TouchableHighlight onPress={() => console.log('o')} style={styles.buttonContainer}>
+        <TouchableHighlight onPress={() => uploadDocumentHandler()} style={styles.buttonContainer}>
           <Ionicons name="attach" size={20} color="#fff" />
         </TouchableHighlight>
         <MessageInput
@@ -240,5 +375,20 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 13,
     borderTopLeftRadius: 13,
     borderTopRightRadius: 13,
+  },
+  imageMsgContainer: {
+    position: 'relative',
+    width: 300,
+    height: 254,
+    margin: 10,
+    padding: 10,
+    paddingBottom: 25,
+  },
+  documentMsgContainer: {
+    position: 'relative',
+    width: 180,
+    margin: 10,
+    padding: 10,
+    paddingBottom: 10,
   },
 });

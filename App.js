@@ -24,6 +24,7 @@ import FetchAPI from './src/api';
 import color from './src/styles/color';
 import CustomToast from './src/components/Toast';
 import ChatScreen from './src/navigation/screens/ChatScreen';
+import ImageScreen from './src/navigation/screens/ImageScreen';
 
 const Stack = createStackNavigator();
 
@@ -144,6 +145,16 @@ function App() {
                   component={ChatScreen}
                   options={{
                     headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="img"
+                  component={ImageScreen}
+                  options={{
+                    headerTitle: 'back',
+                    headerTitleStyle: { color: color.white },
+                    headerStyle: { backgroundColor: color.mainColor, borderBottomWidth: 0 },
+                    headerTintColor: color.white,
                   }}
                 />
               </>

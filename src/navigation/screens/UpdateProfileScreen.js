@@ -44,14 +44,14 @@ export default function UpdateProfileScreen({ navigation }) {
       formdata.append('data', { uri: imgUri, name: 'image', type: 'image/jpeg' });
 
       const res = await FetchAPI.updateProfilePicture(formdata, accessToken);
+      console.log(res);
       setUserinfo((prev) => ({
         ...prev,
-        profileUrl: res.fileUri,
+        profileUrl: res.data.fileUri,
       }));
     }
 
-    const res = await FetchAPI.updateProfileInformation(inputs, accessToken);
-    console.log(res);
+    await FetchAPI.updateProfileInformation(inputs, accessToken);
     setIsLoading(false);
     navigation.navigate('Profile');
   };

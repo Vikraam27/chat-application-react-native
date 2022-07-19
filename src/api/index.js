@@ -248,6 +248,44 @@ class FetchAPI {
 
     return request;
   }
+
+  static async uploadPictureMessage(data, roomId, accessToken) {
+    const request = await this.fetchApi(`/room/${roomId}/message/image`, {
+      method: 'POST',
+      body: data,
+    }, accessToken, 'multipart/form-data');
+
+    if (request.message === 'Token maximum age exceeded') {
+      const newAccessToken = await this.generateNewAccessToken();
+      const newRequest = await this.fetchApi(`/room/${roomId}/message/image`, {
+        method: 'POST',
+        body: data,
+      }, newAccessToken, 'multipart/form-data');
+
+      return newRequest;
+    }
+
+    return request;
+  }
+
+  static async uploadDocumentMessage(data, roomId, accessToken) {
+    const request = await this.fetchApi(`/room/${roomId}/message/document`, {
+      method: 'POST',
+      body: data,
+    }, accessToken, 'multipart/form-data');
+
+    if (request.message === 'Token maximum age exceeded') {
+      const newAccessToken = await this.generateNewAccessToken();
+      const newRequest = await this.fetchApi(`/room/${roomId}/message/document`, {
+        method: 'POST',
+        body: data,
+      }, newAccessToken, 'multipart/form-data');
+
+      return newRequest;
+    }
+
+    return request;
+  }
 }
 
 export default FetchAPI;

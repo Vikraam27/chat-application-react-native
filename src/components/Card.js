@@ -85,7 +85,18 @@ export function MessageCard({ data, navigateRoom }) {
       </View>
       <View style={styles.profileBody}>
         <Text style={styles.username}>{userinfo.owner === creator ? participant : creator}</Text>
-        <Text style={styles.status}>{lastMessage ? lastMessage.message : 'start chat with your friends' }</Text>
+        <Text style={styles.status}>
+          {(() => {
+            if (lastMessage) {
+              if (lastMessage.messageType !== 'text') {
+                return `sent ${lastMessage.messageType}`;
+              }
+              return lastMessage.message;
+            }
+            return 'start chat with your friends';
+          })()}
+
+        </Text>
       </View>
     </TouchableOpacity>
   );
