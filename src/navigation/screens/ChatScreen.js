@@ -9,6 +9,7 @@ import {
   StatusBar, Image, TouchableWithoutFeedback,
   TouchableHighlight, Linking,
 } from 'react-native';
+import { Controller, useForm } from 'react-hook-form';
 import socket from 'socket.io-client';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
@@ -24,11 +25,12 @@ import pdfIcon from '../../icons/pdf.png';
 export default function ChatScreen({ navigation, route }) {
   const [userinfo] = useContext(UserInfoContex);
   const [roomInfo, setRoomInfo] = useState(null);
-  const [msg, setMsg] = useState('');
   const [roomid] = useState(route.params.roomid);
   const scrollViewRef = useRef();
   const toast = useToast();
-  const io = socket.connect('http://localhost:5000', { transports: ['websocket'] });
+  const [isLoading, setIsLoading] = useState(false);
+  const io = socket.connect('https://mychat-api-dev.herokuapp.com', { transports: ['websocket'] });
+  const { handleSubmit, control, reset } = useForm();
 
   useEffect(async () => {
     if (roomid) {
@@ -36,7 +38,6 @@ export default function ChatScreen({ navigation, route }) {
       const res = await FetchAPI.getRoomDetails(roomid, accessToken);
       if (res.status === 'success') {
         setRoomInfo(res.data);
-        console.log('recall');
       }
     }
   }, []);
@@ -54,7 +55,6 @@ export default function ChatScreen({ navigation, route }) {
           data,
         ],
       }));
-      console.log('socket');
     });
 
     return (() => {
@@ -79,30 +79,42 @@ export default function ChatScreen({ navigation, route }) {
     });
 
     if (!result.cancelled) {
+      setIsLoading(true);
       const formdata = new FormData();
       const accessToken = await Token.Get('accessToken');
       formdata.append('data', { uri: result.uri, name: 'image', type: 'image/jpeg' });
-      await FetchAPI.uploadPictureMessage(formdata, roomid, accessToken);
+      const res = await FetchAPI.uploadPictureMessage(formdata, roomid, accessToken);
+      if (res.status === 'success') {
+        io.emit('chatMsg', {
+          ...res.data,
+          roomId: roomid,
+        });
+        setIsLoading(false);
+      }
     }
   };
 
   const uploadDocumentHandler = async () => {
     const requestFile = await DocumentPicker.getDocumentAsync({});
     if (requestFile.type === 'success') {
+      setIsLoading(true);
       const formdata = new FormData();
       const accessToken = await Token.Get('accessToken');
       formdata.append('data', { uri: requestFile.uri, name: requestFile.name, type: requestFile.mimeType });
-      await FetchAPI.uploadDocumentMessage(formdata, roomid, accessToken);
+      const res = await FetchAPI.uploadDocumentMessage(formdata, roomid, accessToken);
+      if (res.status === 'success') {
+        io.emit('chatMsg', {
+          ...res.data,
+          roomId: roomid,
+        });
+        setIsLoading(false);
+      }
     }
   };
 
-  const textToRef = (text) => {
-    setMsg(text);
-  };
-
-  const onSubmit = async () => {
+  const onSubmit = async ({ message }) => {
     const accessToken = await Token.Get('accessToken');
-    const res = await FetchAPI.postMessage(msg, 'text', roomid, accessToken);
+    const res = await FetchAPI.postMessage(message, 'text', roomid, accessToken);
     if (res.status !== 'success') {
       toast.show('unable to send message', {
         type: 'customToast',
@@ -117,7 +129,7 @@ export default function ChatScreen({ navigation, route }) {
         ...res.data,
         roomId: roomid,
       });
-      setMsg('');
+      reset({ message: '' });
     }
   };
   if (!roomInfo || !roomid) {
@@ -281,14 +293,29 @@ export default function ChatScreen({ navigation, route }) {
         <TouchableHighlight onPress={() => uploadDocumentHandler()} style={styles.buttonContainer}>
           <Ionicons name="attach" size={20} color="#fff" />
         </TouchableHighlight>
-        <MessageInput
-          onChangeText={textToRef}
-          value={msg}
-          onSubmitEditing={onSubmit}
+        <Controller
+          control={control}
+          render={({ field: { onChange, value } }) => (
+
+            <MessageInput
+              onChangeText={(val) => onChange(val)}
+              value={value}
+              onSubmitEditing={handleSubmit(onSubmit)}
+            />
+          )}
+          name="message"
+          rules={{ required: true }}
         />
-        <TouchableHighlight onPress={onSubmit} style={styles.buttonContainer}>
+
+        <TouchableHighlight onPress={handleSubmit(onSubmit)} style={styles.buttonContainer}>
           <Ionicons name="send-outline" size={20} color="#fff" />
         </TouchableHighlight>
+      </View>
+      <View style={{
+        position: 'absolute', top: '50%', right: 0, left: 0,
+      }}
+      >
+        <ActivityIndicator animating={isLoading} size="large" color={color.darkBlue} />
       </View>
     </View>
   );

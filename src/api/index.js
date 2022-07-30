@@ -2,6 +2,7 @@ import Token from '../utils/AsyncStorage';
 
 /* eslint-disable no-undef */
 const baseUrl = 'https://mychat-api-dev.herokuapp.com';
+const newsApiUrl = 'https://newsdata.io/api/1/news?apikey=pub_24158c526e30588218db835c18587093386b&country=us';
 
 class FetchAPI {
   static async fetchApi(path, settings, accessToken, contentType = 'application/json') {
@@ -285,6 +286,12 @@ class FetchAPI {
     }
 
     return request;
+  }
+
+  static async getAllNews(category, page) {
+    const request = await fetch(`${newsApiUrl}${category === 'all' ? '' : `&category=${category}`}&page=${page}`);
+
+    return request.json();
   }
 }
 

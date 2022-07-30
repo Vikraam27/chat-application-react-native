@@ -7,14 +7,14 @@ import { Ionicons } from '@expo/vector-icons';
 // screen
 import HomeScreen from './screens/HomeScreen';
 import ProfileScreen from './screens/ProfileScreen';
-import StatusScreen from './screens/StatusScreen';
+import NewsScreen from './screens/NewsScreen';
 
 import Colors from '../styles/color';
 
 // Screen names
 const homeName = 'Home';
 const profileName = 'Profile';
-const satusName = 'Status';
+const newsName = 'News';
 
 const Tab = createBottomTabNavigator();
 
@@ -30,8 +30,8 @@ export default function TabbarContainer() {
 
           if (rn === homeName) {
             iconName = focused ? 'home' : 'home-outline';
-          } else if (rn === satusName) {
-            iconName = focused ? 'list' : 'list-outline';
+          } else if (rn === newsName) {
+            iconName = focused ? 'newspaper' : 'newspaper-outline';
           } else if (rn === profileName) {
             iconName = focused ? 'person-circle' : 'person-circle-outline';
           }
@@ -53,7 +53,7 @@ export default function TabbarContainer() {
     >
 
       <Tab.Screen name={homeName} component={HomeScreen} />
-      <Tab.Screen name={satusName} component={StatusScreen} />
+      <Tab.Screen name={newsName} component={NewsScreen} />
       <Tab.Screen name={profileName} component={ProfileScreen} />
     </Tab.Navigator>
   );

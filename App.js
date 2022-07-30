@@ -25,6 +25,7 @@ import color from './src/styles/color';
 import CustomToast from './src/components/Toast';
 import ChatScreen from './src/navigation/screens/ChatScreen';
 import ImageScreen from './src/navigation/screens/ImageScreen';
+import ArticleScreen from './src/navigation/screens/ArticleScreen';
 
 const Stack = createStackNavigator();
 
@@ -155,6 +156,13 @@ function App() {
                     headerTitleStyle: { color: color.white },
                     headerStyle: { backgroundColor: color.mainColor, borderBottomWidth: 0 },
                     headerTintColor: color.white,
+                  }}
+                />
+                <Stack.Screen
+                  name="article"
+                  component={ArticleScreen}
+                  options={{
+                    headerShown: false,
                   }}
                 />
               </>
