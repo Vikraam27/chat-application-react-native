@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  SafeAreaView, View, Text, StyleSheet, StatusBar, ActivityIndicator,
+  SafeAreaView, View, Text, StyleSheet, StatusBar, ActivityIndicator, Linking,
 } from 'react-native';
 
 import { useToast } from 'react-native-toast-notifications';
@@ -97,13 +97,13 @@ export default function ProfileScreen({ navigation }) {
             name="Website"
             desc="open mychat in weh browser"
             iconName="globe-outline"
-            onPress={() => console.log('[')}
+            onPress={() => Linking.openURL('https://mychat-web.netlify.com')}
           />
           <List
-            name="Give us rate"
-            desc="rate mychat in playstore"
-            iconName="star-outline"
-            onPress={() => console.log('[')}
+            name="Download mychat"
+            desc="Download mychat for android"
+            iconName="download-outline"
+            onPress={() => Linking.openURL('https://firebasestorage.googleapis.com/v0/b/mychat-storage.appspot.com/o/mychat.apk?alt=media ')}
           />
           <List
             name="Log-out"

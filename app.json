@@ -23,7 +23,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0099A9"
-      }
+      },
+      "package": "com.vikramramaja.MyChat"
     },
     "web": {
       "favicon": "./assets/favicon.png"
