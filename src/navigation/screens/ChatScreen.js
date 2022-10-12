@@ -204,7 +204,6 @@ export default function ChatScreen({ navigation, route }) {
         </View>
         <View style={styles.headerInfo}>
           <Text style={styles.text}>{userinfo.owner === creator ? participant : creator}</Text>
-          <Text style={styles.textGray}>data.status</Text>
         </View>
       </View>
       <ScrollView

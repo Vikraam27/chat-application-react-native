@@ -26,6 +26,10 @@ class FetchAPI {
         refreshToken,
       }),
     });
+    if (res.message === 'invalid refresh token') {
+      Token.Delete('accessToken');
+      Token.Delete('refreshToken');
+    }
     await Token.Set('accessToken', res.data.accessToken);
     return res.data.accessToken;
   }

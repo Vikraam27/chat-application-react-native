@@ -1,8 +1,10 @@
 import React from 'react';
 import {
-  Keyboard, ScrollView, StyleSheet, View, Text, TouchableOpacity, Image, ActivityIndicator,
+  Keyboard, ScrollView, StyleSheet, View, Text,
+  TouchableOpacity, Image, ActivityIndicator, Platform,
 } from 'react-native';
 import { useToast } from 'react-native-toast-notifications';
+import * as Updates from 'expo-updates';
 
 import UserInfoContex from '../../utils/Contex';
 import { Input } from '../../components/formComponents';
@@ -91,6 +93,11 @@ export default function LoginScreen({ navigation, route }) {
         ...prev,
         refreshToken: res.data.refreshToken,
       }));
+      if (Platform.OS === 'android') {
+        setTimeout(async () => {
+          await Updates.reloadAsync();
+        }, 200);
+      }
     }
   };
 
